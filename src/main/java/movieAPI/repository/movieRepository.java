@@ -10,5 +10,13 @@ import movieAPI.entity.movies;
 public class movieRepository implements  PanacheRepository<movies>{
 
     
+    public movies findById(String id){
+        return find("imdbID", id).firstResult();
+    }
+
+    public void deleteById(String id){
+        delete("imdbID", id);
+    }
+    
 }
 
