@@ -1,5 +1,8 @@
 package movieAPI;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -15,7 +18,9 @@ import static org.hamcrest.Matchers.equalTo;
 public class movieResourceCRUDTest {
 
     // Starter test movie
-    movies tMovie = new movies("123", "test", 2004, "Test movie");
+    public movies createStarterMovie(){
+        return new movies("123", "test", 2004, "Test movie");
+    }
 
     public movies cloneMovie(movies m){
         return new movies(m.imdbID, m.title, m.yearMade, m.description);
@@ -27,9 +32,60 @@ public class movieResourceCRUDTest {
         given().get("/").then().statusCode(200);
     }
 
+    // Testing sorting and paging
+    @Test
+    public void testGET2(){
+
+        movies tMovie = createStarterMovie();
+
+        // Add four movies
+        tMovie.title="test1";
+        tMovie.yearMade=100;
+        given().contentType(ContentType.JSON).body(tMovie).when().post("/").then().statusCode(200);
+        tMovie.imdbID="124";
+        tMovie.title="test2";
+        tMovie.yearMade=101;
+        given().contentType(ContentType.JSON).body(tMovie).when().post("/").then().statusCode(200);
+        tMovie.imdbID="125";
+        tMovie.title="test3";
+        tMovie.yearMade=102;
+        given().contentType(ContentType.JSON).body(tMovie).when().post("/").then().statusCode(200);
+        tMovie.imdbID="126";
+        tMovie.title="test4";
+        tMovie.yearMade=103;
+        given().contentType(ContentType.JSON).body(tMovie).when().post("/").then().statusCode(200);
+
+        // Get the earliest three
+        movies[] movieList = given().params("orderBy", "yearMade", "orderDirection", "asc", "page", "0", "pageSize", "3").get("/").as(movies[].class);
+        
+        // Check if match
+        assertTrue(movieList.length==3);
+        assertEquals("test1", movieList[0].title);
+        assertEquals("test2", movieList[1].title);
+        assertEquals("test3", movieList[2].title);
+        
+        // Get the next three
+        movieList = given().params("orderBy", "yearMade", "orderDirection", "asc", "page", "1", "pageSize", "3").get("/").as(movies[].class);
+        
+        // Check if they match
+        assertTrue(movieList.length==3);
+        assertEquals("test4", movieList[0].title);
+
+        // Delete movies
+        given().delete("/" + "123").then().statusCode(204);
+        given().delete("/" + "124").then().statusCode(204);
+        given().delete("/" + "125").then().statusCode(204);
+        given().delete("/" + "126").then().statusCode(204);
+
+
+    }
+
 
     @Test
     public void testPOST1(){
+        
+        movies tMovie = createStarterMovie();
+
         // Add movie
         given().contentType(ContentType.JSON).body(tMovie).when().post("/").then().statusCode(200);
 
@@ -47,6 +103,9 @@ public class movieResourceCRUDTest {
     
     @Test
     public void testPATCH1(){
+        
+        movies tMovie = createStarterMovie();
+
         // Add movie
         given().contentType(ContentType.JSON).body(tMovie).when().post("/").then().statusCode(200);
         
@@ -72,6 +131,8 @@ public class movieResourceCRUDTest {
 
     @Test
     public void testPUT1(){
+        
+        movies tMovie = createStarterMovie();
 
         // Add movie
         given().contentType(ContentType.JSON).body(tMovie).when().post("/").then().statusCode(200);
