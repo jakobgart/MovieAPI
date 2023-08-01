@@ -26,20 +26,15 @@ public class movies extends PanacheEntityBase {
         this.description = des;
     }
 
-    public void updateAllButId(movies mov){
-        this.title = mov.title;
-        this.yearMade = mov.yearMade;
-        this.description = mov.description;
-    }
-
-    public void updateIfNotNullExceptId(movies mov){
-        this.title = (mov.title==null) ? this.title : mov.title;
-        this.yearMade = (mov.yearMade==null) ? this.yearMade : mov.yearMade;
-        this.description = (mov.description==null) ? this.description : mov.description;
-    }
-
     public String toString(){
-        return String.format("\n%s\n%s(%d)\n%s\n", imdbID, title, yearMade, description);
+        return String.format("\n\"%s\"\n\"%s\" (%d)\n\"%s\"\n", imdbID, title, yearMade, description);
+    }
+
+    @Override
+    public boolean equals(Object obj){
+        if(obj==null || obj.getClass() != this.getClass()) return false;
+        final movies m = (movies) obj;
+        return this.imdbID.equals(m.imdbID) && this.title.equals(m.title) && this.yearMade.equals(m.yearMade) && this.description.equals(m.description);
     }
 
 }

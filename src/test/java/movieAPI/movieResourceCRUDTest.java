@@ -10,21 +10,12 @@ import io.restassured.http.ContentType;
 import movieAPI.entity.movies;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
-
 
 
 @QuarkusTest
 public class movieResourceCRUDTest {
 
-    // Starter test movie
-    public movies createStarterMovie(){
-        return new movies("123", "test", 2004, "Test movie");
-    }
-
-    public movies cloneMovie(movies m){
-        return new movies(m.imdbID, m.title, m.yearMade, m.description);
-    }
+    
 
     
     @Test
@@ -36,47 +27,41 @@ public class movieResourceCRUDTest {
     @Test
     public void testGET2(){
 
-        movies tMovie = createStarterMovie();
 
         // Add four movies
-        tMovie.title="test1";
-        tMovie.yearMade=100;
-        given().contentType(ContentType.JSON).body(tMovie).when().post("/").then().statusCode(200);
-        tMovie.imdbID="124";
-        tMovie.title="test2";
-        tMovie.yearMade=101;
-        given().contentType(ContentType.JSON).body(tMovie).when().post("/").then().statusCode(200);
-        tMovie.imdbID="125";
-        tMovie.title="test3";
-        tMovie.yearMade=102;
-        given().contentType(ContentType.JSON).body(tMovie).when().post("/").then().statusCode(200);
-        tMovie.imdbID="126";
-        tMovie.title="test4";
-        tMovie.yearMade=103;
-        given().contentType(ContentType.JSON).body(tMovie).when().post("/").then().statusCode(200);
+        movies tMovie1 = new movies("123", "test1", 100, "First movie.");
+        addMovie(tMovie1, 200);
+
+        movies tMovie2 = new movies("124", "test2", 101, "Second movie.");
+        addMovie(tMovie2, 200);
+        
+        movies tMovie3 = new movies("125", "test3", 102, "Third movie.");
+        addMovie(tMovie3, 200);
+
+        movies tMovie4 = new movies("126", "test4", 104, "Fourth movie.");
+        addMovie(tMovie4, 200);
 
         // Get the earliest three
         movies[] movieList = given().params("orderBy", "yearMade", "orderDirection", "asc", "page", "0", "pageSize", "3").get("/").as(movies[].class);
         
         // Check if match
         assertTrue(movieList.length==3);
-        assertEquals("test1", movieList[0].title);
-        assertEquals("test2", movieList[1].title);
-        assertEquals("test3", movieList[2].title);
-        
+        assertEquals(tMovie1, movieList[0]);
+        assertEquals(tMovie2, movieList[1]);
+        assertEquals(tMovie3, movieList[2]);
+
         // Get the next three
         movieList = given().params("orderBy", "yearMade", "orderDirection", "asc", "page", "1", "pageSize", "3").get("/").as(movies[].class);
         
         // Check if they match
         assertTrue(movieList.length==3);
-        assertEquals("test4", movieList[0].title);
+        assertEquals(tMovie4, movieList[0]);
 
         // Delete movies
-        given().delete("/" + "123").then().statusCode(204);
-        given().delete("/" + "124").then().statusCode(204);
-        given().delete("/" + "125").then().statusCode(204);
-        given().delete("/" + "126").then().statusCode(204);
-
+        deleteMovie(tMovie1.imdbID, 204);
+        deleteMovie(tMovie2.imdbID, 204);
+        deleteMovie(tMovie3.imdbID, 204);
+        deleteMovie(tMovie4.imdbID, 204);
 
     }
 
@@ -84,58 +69,50 @@ public class movieResourceCRUDTest {
     @Test
     public void testPOST1(){
         
-        movies tMovie = createStarterMovie();
+        movies tMovie = createTestMovie();
 
-        // Add movie
-        given().contentType(ContentType.JSON).body(tMovie).when().post("/").then().statusCode(200);
+        addMovie(tMovie, 200);
 
         // Check if exists
-        given().get("/" + tMovie.imdbID).then().statusCode(200)
-        .body("imdbID", equalTo(tMovie.imdbID))
-        .body("title", equalTo(tMovie.title))
-        .body("yearMade", equalTo(tMovie.yearMade))
-        .body("description", equalTo(tMovie.description));
+        movies recieved = given().get("/" + tMovie.imdbID).then().statusCode(200).extract().as(movies.class);
+        assertEquals(tMovie, recieved);
 
-        // Delete movie
-        given().delete("/" + tMovie.imdbID).then().statusCode(204);
+        deleteMovie(tMovie.imdbID, 204);
     }
 
     
     @Test
     public void testPATCH1(){
         
-        movies tMovie = createStarterMovie();
+        movies tMovie = createTestMovie();
 
-        // Add movie
-        given().contentType(ContentType.JSON).body(tMovie).when().post("/").then().statusCode(200);
+        addMovie(tMovie, 200);
         
-        // Make changes
-        movies nMovie = cloneMovie(tMovie);
-        nMovie.title=null;
-        nMovie.yearMade=1999;
-        nMovie.description=null;
+        // Patching info
+        movies nMovie = new movies(tMovie.imdbID, null, 1999, null);
         
         // Patch movie
-        given().contentType(ContentType.JSON).body(nMovie).when().patch("/" + tMovie.imdbID).then().statusCode(200);
+        given().contentType(ContentType.JSON).body(nMovie).when().patch("/" + nMovie.imdbID).then().statusCode(200);
 
-        // Check contents
-        given().get("/" + tMovie.imdbID).then().statusCode(200)
-        .body("imdbID", equalTo(tMovie.imdbID))
-        .body("title", equalTo(tMovie.title))
-        .body("yearMade", equalTo(nMovie.yearMade))
-        .body("description", equalTo(tMovie.description));
+        // Create expected final movie
+        nMovie.title=tMovie.title;
+        nMovie.description=tMovie.description;
+
+        // Check if patched
+        movies recieved = given().get("/" + tMovie.imdbID).then().statusCode(200).extract().as(movies.class);
+        assertEquals(nMovie, recieved);
 
         // Delete movie
-        given().delete("/" + tMovie.imdbID).then().statusCode(204);
+        deleteMovie(nMovie.imdbID, 204);
     }
 
     @Test
     public void testPUT1(){
         
-        movies tMovie = createStarterMovie();
+        movies tMovie = createTestMovie();
 
         // Add movie
-        given().contentType(ContentType.JSON).body(tMovie).when().post("/").then().statusCode(200);
+        addMovie(tMovie, 200);
         
         // Make changes
         movies nMovie = cloneMovie(tMovie);
@@ -143,17 +120,48 @@ public class movieResourceCRUDTest {
         nMovie.yearMade=1999;
         
         // Put movie
-        given().contentType(ContentType.JSON).body(nMovie).when().put("/" + tMovie.imdbID).then().statusCode(200);
+        given().contentType(ContentType.JSON).body(nMovie).when().put("/" + nMovie.imdbID).then().statusCode(200);
 
-        // Check contents
-        given().get("/" + tMovie.imdbID).then().statusCode(200)
-        .body("imdbID", equalTo(tMovie.imdbID))
-        .body("title", equalTo(nMovie.title))
-        .body("yearMade", equalTo(nMovie.yearMade))
-        .body("description", equalTo(tMovie.description));
+        // Check if updated
+        movies recieved = given().get("/" + tMovie.imdbID).then().statusCode(200).extract().as(movies.class);
+        assertEquals(nMovie, recieved);
 
         // Delete movie
-        given().delete("/" + tMovie.imdbID).then().statusCode(204);
+        deleteMovie(nMovie.imdbID, 204);
     }
+
+
+
+
+
     
+
+
+
+
+
+
+
+
+
+    /* Help functions */
+    
+    public void addMovie(movies m, int statusCode){
+        given().contentType(ContentType.JSON).body(m).when().post("/").then().statusCode(statusCode);
+    }
+
+    public void deleteMovie(String mID, int statusCode){
+        given().delete("/" + mID).then().statusCode(statusCode);
+    }
+
+
+
+    // Starter test movie
+    public movies createTestMovie(){
+        return new movies("123", "test", 2004, "Test movie");
+    }
+    // Clone movie
+    public movies cloneMovie(movies m){
+        return new movies(m.imdbID, m.title, m.yearMade, m.description);
+    }
 }

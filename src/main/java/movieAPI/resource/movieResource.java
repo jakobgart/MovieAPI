@@ -1,18 +1,12 @@
 package movieAPI.resource;
 
-import movieAPI.repository.movieRepository;
+import movieAPI.service.movieService;
 import movieAPI.entity.movies;
 
 import java.util.List;
 
-import org.jboss.logging.Logger;
 
-import io.quarkus.hibernate.orm.panache.PanacheQuery;
-import io.quarkus.panache.common.Page;
-import io.quarkus.panache.common.Sort;
-import io.quarkus.panache.common.Sort.Direction;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
@@ -29,68 +23,46 @@ import jakarta.ws.rs.core.MediaType;
 @Produces(MediaType.APPLICATION_JSON)
 public class movieResource {
 
-    private static final Logger log = Logger.getLogger(movieResource.class);
-
+    
     @Inject
-    movieRepository movieRepo;
+    movieService movieSer;
 
     @GET
     public List<movies> allMovies(@DefaultValue("title") @QueryParam("orderBy") String sortBy,
             @DefaultValue("desc") @QueryParam("orderDirection") String sortDirection,
             @DefaultValue("0") @QueryParam("page") int page,
             @DefaultValue("-1") @QueryParam("pageSize") int size) {
-
-        PanacheQuery<movies> query = movieRepo.findAll(
-                Sort.by(sortBy, sortDirection.equals("asc") ? Direction.Ascending : Direction.Descending));
-
-        if (size > 0) {
-            query = query.page(Page.of(page, size));
-        }
-
-        return query.list();
-
+        return movieSer.allMovies(sortBy, sortDirection, page, size);
     }
 
     @GET
     @Path("/{id}")
     public movies getMovieById(@PathParam("id") String id) {
-        log.info(movieRepo.findById(id));
-        return movieRepo.findById(id);
+        return movieSer.getMovieById(id);
     }
 
 
     @POST
-    @Transactional
     public movies addMovie(movies mov) {
-        movieRepo.persist(mov);
-        return mov;
+        return movieSer.addMovie(mov);
     }
 
     @PUT
     @Path("/{id}")
-    @Transactional
     public movies updateMovie(@PathParam("id") String id, movies mov) {
-        movies entity = movieRepo.findById(id);
-        entity.updateAllButId(mov);
-        movieRepo.persist(entity);
-        return entity;
+        return movieSer.updateMovie(id, mov);
     }
 
     @PATCH
     @Path("/{id}")
-    @Transactional
     public movies partiallyUpdateMovie(@PathParam("id") String id, movies mov) {
-        movies entity = movieRepo.findById(id);
-        entity.updateIfNotNullExceptId(mov);
-        movieRepo.persist(entity);
-        return entity;
+        return movieSer.partiallyUpdateMovie(id, mov);
     }
 
     @DELETE
     @Path("/{id}")
-    @Transactional
     public void deleteMovie(@PathParam("id") String id) {
-        movieRepo.deleteById(id);
+        movieSer.deleteMovie(id);
     }
 
 }
