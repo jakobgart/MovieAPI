@@ -1,0 +1,5 @@
+services:
+  app:
+    image: quarkus/movieapi-jvm
+    ports: 
+      - 8080:8080

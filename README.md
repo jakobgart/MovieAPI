@@ -24,3 +24,12 @@ description: string
 - `[PUT]    /{id}` - Requires attached JSON file with information about a movie. Movie which has *id* has its information replaced
 - `[PATCH]  /{id}` - Requires attached JSON file with information about a movie. Movie which has *id* has its information replaced unless the given information is missing
 - `[DELETE] /{id}` - Delete the movie with the given *id*
+
+## How to start
+
+To build the image and start the container use the following three commands in the root of the project:
+```
+./mvnw package
+docker build -f src/main/docker/Dockerfile.jvm -t quarkus/movieapi-jvm .
+docker compose up -d
+```
